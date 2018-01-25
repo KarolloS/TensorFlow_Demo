@@ -6,36 +6,35 @@ import tensorflow as tf
 
 # Set parameters
 learning_rate = 0.01
-training_iteration = 30
+training_iteration = 20
 batch_size = 100
 
 # TF graph input
-x = tf.placeholder("float", [None, 784]) # mnist data image of shape 28*28=784
-y = tf.placeholder("float", [None, 10]) # 0-9 digits recognition => 10 classes
+x = tf.placeholder("float", [None, 784], name='input') # mnist data image of shape 28*28=784
+y = tf.placeholder("float", [None, 10], name='output') # 0-9 digits recognition => 10 classes
 
 # Create a model
 
 # Set model weights
-W = tf.Variable(tf.zeros([784, 10]))
-b = tf.Variable(tf.zeros([10]))
+W = tf.Variable(tf.zeros([784, 10]), name='weight')
+b = tf.Variable(tf.zeros([10]), name='bias')
 
-with tf.name_scope("Wx_b") as scope:
+with tf.variable_scope("Wx_b"):
     # Construct a linear model
     model = tf.nn.softmax(tf.matmul(x, W) + b) # Softmax
-    
-# Add summary ops to collect data
-w_h = tf.summary.histogram("weights", W)
-b_h = tf.summary.histogram("biases", b)
 
-# More name scopes will clean up graph representation
-with tf.name_scope("cost_function") as scope:
+# Add summary ops to collect data
+w_h = tf.summary.histogram(W.op.name, W)
+b_h = tf.summary.histogram(b.op.name, b)
+
+# Create loss function
+with tf.variable_scope("cost_function"):
     # Minimize error using cross entropy
-    # Cross entropy
     cost_function = -tf.reduce_sum(y*tf.log(model))
     # Create a summary to monitor the cost function
-    tf.summary.scalar("cost_function", cost_function)
+    tf.summary.scalar(cost_function.op.name, cost_function)
 
-with tf.name_scope("train") as scope:
+with tf.variable_scope("train"):
     # Gradient descent
     optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost_function)
 
@@ -49,8 +48,9 @@ merged_summary_op = tf.summary.merge_all()
 with tf.Session() as sess:
     sess.run(init)
 
-    # Change this to a location on your computer
-    summary_writer = tf.summary.FileWriter('D:\Studia\Inne\TensorFlow_Demo', graph=sess.graph)
+    # Set the logs writer
+    # summary_writer = tf.summary.FileWriter('D:\Studia\Inne\TensorFlow_Demo', graph=sess.graph)
+    summary_writer = tf.summary.FileWriter('board_log', sess.graph)
 
     # Training cycle
     for iteration in range(training_iteration):
@@ -79,3 +79,4 @@ with tf.Session() as sess:
 
 
 # tensorboard --logdir=D:\Studia\Inne\TensorFlow_Demo
+
