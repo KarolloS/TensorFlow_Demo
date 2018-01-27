@@ -1,12 +1,16 @@
 # Import MNIST data
 import input_data
+import numpy as np
+import matplotlib.pyplot as plt
+import random as rand
+
 mnist = input_data.read_data_sets("D:\Studia\Inne\TensorFlow_Demo\data", one_hot=True)
 
 import tensorflow as tf
 
 # Set parameters
 learning_rate = 0.01
-training_iteration = 20
+training_iteration = 1
 batch_size = 100
 
 # TF graph input
@@ -45,7 +49,7 @@ init = tf.global_variables_initializer()
 merged_summary_op = tf.summary.merge_all()
 
 # Launch the graph
-with tf.Session() as sess:
+with tf.Session(config=tf.ConfigProto(device_count={'GPU': 0})) as sess: # don't use GPU
     sess.run(init)
 
     # Set the logs writer
@@ -77,6 +81,31 @@ with tf.Session() as sess:
     accuracy = tf.reduce_mean(tf.cast(predictions, "float"))
     print("Accuracy:", accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
 
+    # present 9 random testing examples
+    plt.figure(figsize=(15, 7.5))
+    for p in range(9):
+        # get number of random image
+        k = rand.randrange(mnist.test.num_examples)
+        # get actual label
+        label = np.nonzero(mnist.test.labels[k])[0][0]
+
+        # plot the image
+        s1 = plt.subplot(3,6,2*p+1)
+        s1.axis('off')
+        img = (np.reshape(mnist.test.images[k], (28, 28)) * 255).astype(np.uint8)
+        plt.imshow(img)
+
+        # calculate classification
+        img = np.array([mnist.test.images[k]])
+        prob = sess.run(model, feed_dict={x: img})
+        # plot the probabilities
+        s2 = plt.subplot(3,6,2*p+2)
+        plt.barh(range(10),prob[0]*100)
+        plt.title("actual label: " + str(label))
+        plt.yticks(range(10))
+
+    plt.tight_layout()
+    plt.show()
 
 # tensorboard --logdir=D:\Studia\Inne\TensorFlow_Demo
 
