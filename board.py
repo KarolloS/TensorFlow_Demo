@@ -3,6 +3,7 @@ import input_data
 import numpy as np
 import matplotlib.pyplot as plt
 import random as rand
+import time
 
 mnist = input_data.read_data_sets("D:\Studia\Inne\TensorFlow_Demo\data", one_hot=True)
 
@@ -10,7 +11,7 @@ import tensorflow as tf
 
 # Set parameters
 learning_rate = 0.01
-training_iteration = 1
+training_iteration = 30
 batch_size = 100
 
 # TF graph input
@@ -20,15 +21,18 @@ y = tf.placeholder("float", [None, 10], name='output') # 0-9 digits recognition 
 # Create a model
 
 # Set model weights
-W = tf.Variable(tf.zeros([784, 10]), name='weight')
+W1 = tf.Variable(tf.random_normal([784, 784], stddev=0.1), name='weight_1')
+W2 = tf.Variable(tf.zeros([784, 10]), name='weight_2')
 b = tf.Variable(tf.zeros([10]), name='bias')
 
-with tf.variable_scope("Wx_b"):
+with tf.variable_scope("W2W1x_b"):
     # Construct a linear model
-    model = tf.nn.softmax(tf.matmul(x, W) + b) # Softmax
+    h = tf.nn.relu(tf.matmul(x, W1))
+    model = tf.nn.softmax(tf.matmul(h, W2) + b) # Softmax
 
 # Add summary ops to collect data
-w_h = tf.summary.histogram(W.op.name, W)
+w1_h = tf.summary.histogram(W1.op.name, W1)
+w2_h = tf.summary.histogram(W2.op.name, W2)
 b_h = tf.summary.histogram(b.op.name, b)
 
 # Create loss function
@@ -49,12 +53,16 @@ init = tf.global_variables_initializer()
 merged_summary_op = tf.summary.merge_all()
 
 # Launch the graph
-with tf.Session(config=tf.ConfigProto(device_count={'GPU': 0})) as sess: # don't use GPU
+# with tf.Session(config=tf.ConfigProto(device_count={'GPU': 0})) as sess: # don't use GPU
+with tf.Session() as sess: # use GPU
     sess.run(init)
 
     # Set the logs writer
     # summary_writer = tf.summary.FileWriter('D:\Studia\Inne\TensorFlow_Demo', graph=sess.graph)
     summary_writer = tf.summary.FileWriter('board_log', sess.graph)
+
+    print("Training started...")
+    start_time = time.time()
 
     # Training cycle
     for iteration in range(training_iteration):
@@ -73,7 +81,8 @@ with tf.Session(config=tf.ConfigProto(device_count={'GPU': 0})) as sess: # don't
         # Display logs per iteration step
         print("Iteration:", '%04d' % (iteration + 1), "cost=", "{:.9f}".format(avg_cost))
 
-    print("Training completed!")
+    elapsed_time = time.time() - start_time
+    print("Training completed! (" +str(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))) + ")")
 
     # Test the model
     predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
@@ -100,7 +109,7 @@ with tf.Session(config=tf.ConfigProto(device_count={'GPU': 0})) as sess: # don't
         prob = sess.run(model, feed_dict={x: img})
         # plot the probabilities
         s2 = plt.subplot(3,6,2*p+2)
-        plt.barh(range(10),prob[0]*100)
+        plt.barh(range(10),prob[0])
         plt.title("actual label: " + str(label))
         plt.yticks(range(10))
 
@@ -108,4 +117,3 @@ with tf.Session(config=tf.ConfigProto(device_count={'GPU': 0})) as sess: # don't
     plt.show()
 
 # tensorboard --logdir=D:\Studia\Inne\TensorFlow_Demo
-
